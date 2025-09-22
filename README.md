@@ -1,3 +1,5 @@
+# SEMPLICE PROGETT ESEMPIO
+
 ## OBIETTIVO
 
 L'obiettivo di questa repo è creare un modello partendo da dati medici e implementare una interfaccia web client/server utilizzando Flask per permettere di elaborare delle previsioni basandosi sul modello creato.
