@@ -1,0 +1,18 @@
+# ipynb
+jupyter
+ipykernel
+
+# data processing
+pandas
+numpy
+
+# visualization
+matplotlib
+seaborn
+
+# machine learning
+scikit-learn
+xgboost
+
+# web 
+flask

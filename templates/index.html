@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predizione Rischio Placenta Previa</title>
+</head>
+
+<style>
+    body {
+        font-family: 'Courier New', sans-serif;
+        background-color: #efefef;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+    }
+    h1 {
+        font-family: 'Courier New', sans-serif;
+        text-align: center;
+        color: #333;
+    }
+    form {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 50px;
+        background-color: #a0b28c;
+        border-radius: 5px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    label {
+        display: block;
+        margin-bottom: 10px;
+    }
+    input[type="number"],
+    select {
+        width: 100%; /* Semplificato per una migliore responsività */
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        box-sizing: border-box; /* Aggiunto per un layout consistente */
+    }
+    button {
+        font-family: 'Courier New', sans-serif;
+        width: 100%;
+        padding: 10px;
+        background-color: #9b1a23;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        display: block;
+        margin: 0 auto 20px;
+    }
+    button:hover {
+        background-color: #7a151b; /* Leggero scurimento al passaggio del mouse */
+    }
+    .error {
+        color: #9b1a23;
+        font-weight: bold;
+        margin-bottom: 10px;
+        padding: 10px;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 5px;
+    }
+    .result {
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        margin-top: 20px;
+        padding: 20px;
+        background-color: #f8f8f8;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    .result strong {
+        font-size: 24px;
+        display: block;
+        margin-top: 8px;
+    }
+</style>
+
+<script>
+async function calculateRisk(event) {
+    event.preventDefault(); // Impedisce al form di ricaricare la pagina
+
+    const resultDiv = document.getElementById("result-container");
+    const errorDiv = document.getElementById("errors");
+
+
+    // Raccoglie tutti i dati dal form in un unico oggetto
+    const formData = {};
+    const formElements = event.target.elements;
+    let allFieldsValid = true;
+
+    for (const element of formElements) {
+        if (element.id) { // Considera solo gli elementi con un ID
+            if (element.value === "") {
+                allFieldsValid = false;
+                break;
+            }
+            formData[element.id] = element.value;
+        }
+    }
+
+    // Validazione base: controlla che tutti i campi siano stati riempiti
+    if (!allFieldsValid) {
+        errorDiv.innerHTML = "<p>Errore: Compilare tutti i campi del modulo.</p>";
+        return;
+    }
+
+    try {
+        const response = await fetch('/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            // Se il server restituisce un errore, lo mostriamo
+            throw new Error(data.error || `Errore del server (status: ${response.status})`);
+        }
+
+        // Mostra i risultati
+        const probabilityPercent = (data.probability * 100).toFixed(2);
+        const predictionText = data.prediction === 1 ? 'POSITIVO (Rischio Elevato)' : 'NEGATIVO (Rischio Basso)';
+        
+        resultDiv.innerHTML = `Probabilità di Placenta Previa: <strong>${probabilityPercent}%</strong><hr>Esito Previsione: <strong>${predictionText}</strong>`;
+        resultDiv.style.display = 'block';
+
+    } catch (error) {
+        console.error('Errore durante la chiamata API:', error);
+        errorDiv.innerHTML = `<p>Si è verificato un errore: ${error.message}</p>`;
+    }
+}
+</script>
+
+<body>
+
+    <form onsubmit="calculateRisk(event)">
+        <img src="{{ url_for('static', filename='logoits.png') }}" style="display: block; margin: 20px auto; width: 100px;">
+        <h1>Predizione Rischio Placenta Previa</h1>
+        
+        <label for="Eta">Età Paziente:</label>
+        <input type="number" id="Eta" required min="10" max="100">
+
+        <label for="NumeroGravidanzePregresse">Numero Gravidanze Pregresse:</label>
+        <input type="number" id="NumeroGravidanzePregresse" required min="0">
+        
+        <label for="NumeroTagliCesareiPregressi">Numero Tagli Cesarei Pregressi:</label>
+        <input type="number" id="NumeroTagliCesareiPregressi" required min="0">
+
+        <label for="PrecedentePlacentaPrevia">Precedente Placenta Previa:</label>
+        <select id="PrecedentePlacentaPrevia" required>
+            <option value="0">No</option>
+            <option value="1">Sì</option>
+        </select>
+
+        <label for="SanguinamentiNelSecondoTrimestre">Sanguinamenti nel Secondo Trimestre:</label>
+        <select id="SanguinamentiNelSecondoTrimestre" required>
+            <option value="0">No</option>
+            <option value="1">Sì</option>
+        </select>
+
+        <label for="InsulinaSiericaDueOre">Insulina Sierica (dopo 2 ore, µU/ml):</label>
+        <input type="number" id="InsulinaSiericaDueOre" required min="0">
+
+        <label for="IndiceDiMassaCorporea">Indice di Massa Corporea (BMI):</label>
+        <input type="number" id="IndiceDiMassaCorporea" step="0.1" required min="0">
+
+        <label for="FecondazioneAssisitita">Fecondazione Assistita:</label>
+        <select id="FecondazioneAssisitita" required>
+            <option value="0">No</option>
+            <option value="1">Sì</option>
+        </select>
+        
+        <button type="submit">Calcola Rischio</button>
+        
+        <!--risultato -->
+        <div id="result-container" class="result"></div>
+    </form>
+    <img src="{{ url_for('static', filename='loghi.png') }}" style="display: block; margin: 20px auto; width: 700px;">
+</body>
+</html>

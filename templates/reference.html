@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolo Codice Fiscale</title>
+    <!--<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">-->
+</head>
+
+<style>
+    body {
+        font-family: 'Courier New', sans-serif;
+        background-color: #efefef;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+    }
+    h1 {
+        font-family: 'Courier New', sans-serif;
+        text-align: center;
+        color: #333;
+    }
+    form {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 50px;
+        background-color: #a0b28c;
+        border-radius: 5px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    label {
+        display: block;
+        margin-bottom: 10px;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
+        width: calc(100% - 20px);
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+    button {
+        font-family: 'Courier New', sans-serif;
+        width: 100%;
+        padding: 10px;
+        background-color: #9b1a23;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        display: block;
+        margin: 0 auto 20px;
+    }
+    button:hover {
+        background-color: #9b1a23;
+        display: block;
+        margin: 0 auto 20px;
+    }
+    img {
+        display: block;
+        margin: 0 auto 20px;
+        max-width: 100%;
+        height: auto;
+        border-radius: 5px;
+    }
+    .error {
+        color: #9b1a23;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .result {
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f8f8f8;
+        border-radius: 5px;
+    }
+</style>
+
+<script>
+async function calculateCodiceFiscale(event) {
+    event.preventDefault();
+    
+    // Get form values
+    var nome = document.getElementById("nome").value;
+    var cognome = document.getElementById("cognome").value;
+    var giorno = document.getElementById("giorno").value;
+    var mese = document.getElementById("mese").value;
+    var anno = document.getElementById("anno").value;
+    var sesso = document.querySelector('input[name="sesso"]:checked').value;
+    var comune = document.getElementById("comune").value;
+    var provincia = document.getElementById("provincia").value;
+    
+    // Clear previous errors and result
+    document.getElementById("errors").innerHTML = "";
+    document.getElementById("result").textContent = "";
+    
+    // Validate inputs (basic client-side validation)
+    let errors = [];
+    if (!nome) errors.push("Nome è obbligatorio");
+    if (!cognome) errors.push("Cognome è obbligatorio");
+    if (!giorno) errors.push("Giorno è obbligatorio");
+    if (!mese) errors.push("Mese è obbligatorio");
+    if (!anno) errors.push("Anno è obbligatorio");
+    if (!comune) errors.push("Comune è obbligatorio");
+    
+    if (errors.length > 0) {
+        const errorDiv = document.getElementById("errors");
+        errors.forEach(error => {
+            const p = document.createElement("p");
+            p.textContent = error;
+            errorDiv.appendChild(p);
+        });
+        return;
+    }
+
+    try {
+        const response = await fetch('/codicefiscale', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                nome: nome,
+                cognome: cognome,
+                giorno: giorno,
+                mese: mese,
+                anno: anno,
+                sesso: sesso,
+                comune: comune,
+                provincia: provincia
+            })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            // Handle server-side validation errors
+            if (data.errors) {
+                const errorDiv = document.getElementById("errors");
+                data.errors.forEach(error => {
+                    const p = document.createElement("p");
+                    p.textContent = error;
+                    errorDiv.appendChild(p);
+                });
+            } else if (data.error) {
+                document.getElementById("errors").innerHTML = `<p>${data.error}</p>`;
+            } else {
+                throw new Error(`Network response was not ok (status: ${response.status})`);
+            }
+            return;
+        }
+
+        // Display the result
+        document.getElementById("result").textContent = data.codice_fiscale;
+
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById("errors").innerHTML = `<p>Si è verificato un errore: ${error.message}</p>`;
+    }
+}
+</script>
+
+<body>
+    <form onsubmit="calculateCodiceFiscale(event)">
+        <h1>Calcolo Codice Fiscale</h1>
+        <img src="{{ url_for('static', filename='img/logoits.png') }}" alt="Logo ITS" style="width: auto; height: 300px;">
+        
+        <div id="errors" class="error"></div>
+        
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" required>
+        
+        <label for="cognome">Cognome:</label>
+        <input type="text" id="cognome" name="cognome" required>
+        
+        <label for="giorno">Giorno di nascita:</label>
+        <input type="number" id="giorno" name="giorno" min="1" max="31" required>
+        
+        <label for="mese">Mese di nascita:</label>
+        <input type="number" id="mese" name="mese" min="1" max="12" required>
+        
+        <label for="anno">Anno di nascita:</label>
+        <input type="number" id="anno" name="anno" min="1900" max="2100" required>
+        
+        <label>Sesso:</label>
+        <div style="margin-bottom: 20px;">
+            <label style="display: inline;">
+                <input type="radio" name="sesso" value="M" checked> Maschio
+            </label>
+            <label style="display: inline; margin-left: 20px;">
+                <input type="radio" name="sesso" value="F"> Femmina
+            </label>
+        </div>
+        
+        <label for="comune">Comune di nascita:</label>
+        <input type="text" id="comune" name="comune" required>
+        
+        <label for="provincia">Provincia:</label>
+        <input type="text" id="provincia" name="provincia">
+        
+        <button type="submit">
+            Calcola Codice Fiscale
+        </button>
+        
+        <div class="result" id="result"></div>
+        <br>
+        <img src="{{ url_for('static', filename='img/loghi.png') }}" alt="Loghi" style="width: auto; height: auto;">
+    </form>
+</body>
+</html>
